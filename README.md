@@ -20,5 +20,7 @@ indicates that there is one selection pressure containing two groups labeled as 
 ```
 indicating an independant selection pressure in each group of populations.
 
+A statically linked binary can be downloaded in [Releases](https://github.com/mfoll/BayeScanHierachical/releases), it should work with most Linux distributions. A docker container is available [here](https://hub.docker.com/r/mfoll/bayescanhierachical/builds/).
+
 ## Reference: 
 Foll M, Gaggiotti OE, Daub JT, Vatsiou A, Excoffier L. Widespread signals of convergent adaptation to high altitude in Asia and america. Am J Hum Genet. 2014 Oct 2;95(4):394-407. doi: 10.1016/j.ajhg.2014.09.002. Epub 2014 Sep 25. PubMed PMID: [25262650](https://www.ncbi.nlm.nih.gov/pubmed/25262650); PubMed Central PMCID: [PMC4185124](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4185124/). 
