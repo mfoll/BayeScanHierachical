@@ -308,6 +308,7 @@ int read_structure(string struct_file_name, std::ofstream& outfile) {
     infile.close();
     infile.clear();
 
+    return 0;
 }
 
 int read_input(std::ifstream& infile, string struct_file_name, string outcheck) {
@@ -983,6 +984,7 @@ int read_discarded(std::ifstream& infile) {
         if (locus >= 1 && locus <= I)
             discarded_loci[locus - 1] = true;
     }
+    return 0;
 }
 
 ///////////////////////////////////
