@@ -55,8 +55,8 @@ void jump_model_alpha()
                     -(-0.5*log(2*M_PI*var_alpha[i])-((alpha[i]-mean_alpha[i])*(alpha[i]-mean_alpha[i]))/(2*var_alpha[i]))-log(prior_odds);
         // inverse if we remove
             else
-                A+= (-0.5*log(2*M_PI*var_alpha[i])-((alpha[i]-mean_alpha[i])*(alpha[i]-mean_alpha[i]))/(2*var_alpha[i]))
-                    -log_prior_alpha(alpha[i])+log(prior_odds);//-(-0.5*log(2*M_PI*sd_prior_alpha*sd_prior_alpha)-(alpha[i]*alpha[i])/(2*sd_prior_alpha*sd_prior_alpha));
+                A+= (-0.5*log(2*M_PI*var_alpha[i])-((old_alpha-mean_alpha[i])*(old_alpha-mean_alpha[i]))/(2*var_alpha[i]))
+                    -log_prior_alpha(old_alpha)+log(prior_odds);//-(-0.5*log(2*M_PI*sd_prior_alpha*sd_prior_alpha)-(alpha[i]*alpha[i])/(2*sd_prior_alpha*sd_prior_alpha));
 
             r=randgen_parallel[omp_get_thread_num()].randDblExc();
 
@@ -149,8 +149,8 @@ void jump_model_alpha_codominant()
                     -(-0.5*log(2*M_PI*var_alpha[i])-((alpha[i]-mean_alpha[i])*(alpha[i]-mean_alpha[i]))/(2*var_alpha[i]))-log(prior_odds);
         // inverse if we remove
             else
-                A+= (-0.5*log(2*M_PI*var_alpha[i])-((alpha[i]-mean_alpha[i])*(alpha[i]-mean_alpha[i]))/(2*var_alpha[i]))
-                    -log_prior_alpha(alpha[i])+log(prior_odds);//-(-0.5*log(2*M_PI*sd_prior_alpha*sd_prior_alpha)-(alpha[i]*alpha[i])/(2*sd_prior_alpha*sd_prior_alpha));
+                A+= (-0.5*log(2*M_PI*var_alpha[i])-((old_alpha-mean_alpha[i])*(old_alpha-mean_alpha[i]))/(2*var_alpha[i]))
+                    -log_prior_alpha(old_alpha)+log(prior_odds);//-(-0.5*log(2*M_PI*sd_prior_alpha*sd_prior_alpha)-(alpha[i]*alpha[i])/(2*sd_prior_alpha*sd_prior_alpha));
 
             r=randgen_parallel[omp_get_thread_num()].randDblExc();
 
@@ -223,8 +223,8 @@ void jump_model_eta()
                         -(-0.5*log(2*M_PI*var_eta[p][i])-((eta[p][i]-mean_eta[p][i])*(eta[p][i]-mean_eta[p][i]))/(2*var_eta[p][i]))-log(prior_odds);
             // inverse if we remove
                 else
-                    A+= (-0.5*log(2*M_PI*var_eta[p][i])-((eta[p][i]-mean_eta[p][i])*(eta[p][i]-mean_eta[p][i]))/(2*var_eta[p][i]))
-                        -log_prior_alpha(eta[p][i])+log(prior_odds);//-(-0.5*log(2*M_PI*sd_prior_alpha*sd_prior_alpha)-(alpha[i]*alpha[i])/(2*sd_prior_alpha*sd_prior_alpha));
+                    A+= (-0.5*log(2*M_PI*var_eta[p][i])-((old_eta-mean_eta[p][i])*(old_eta-mean_eta[p][i]))/(2*var_eta[p][i]))
+                        -log_prior_alpha(old_eta)+log(prior_odds);//-(-0.5*log(2*M_PI*sd_prior_alpha*sd_prior_alpha)-(alpha[i]*alpha[i])/(2*sd_prior_alpha*sd_prior_alpha));
 
                 r=randgen_parallel[omp_get_thread_num()].randDblExc();
 
@@ -437,8 +437,8 @@ void jump_model_eta_codominant_ok_old()
                         -(-0.5*log(2*M_PI*var_eta2[g][i])-((eta2[g][i]-mean_eta2[g][i])*(eta2[g][i]-mean_eta2[g][i]))/(2*var_eta2[g][i]))-log(prior_odds);
             // inverse if we remove
                 else
-                    A+= (-0.5*log(2*M_PI*var_eta2[g][i])-((eta2[g][i]-mean_eta2[g][i])*(eta2[g][i]-mean_eta2[g][i]))/(2*var_eta2[g][i]))
-                        -log_prior_alpha(eta2[g][i])+log(prior_odds);//-(-0.5*log(2*M_PI*sd_prior_alpha*sd_prior_alpha)-(alpha[i]*alpha[i])/(2*sd_prior_alpha*sd_prior_alpha));
+                    A+= (-0.5*log(2*M_PI*var_eta2[g][i])-((old_eta2-mean_eta2[g][i])*(old_eta2-mean_eta2[g][i]))/(2*var_eta2[g][i]))
+                        -log_prior_alpha(old_eta2)+log(prior_odds);//-(-0.5*log(2*M_PI*sd_prior_alpha*sd_prior_alpha)-(alpha[i]*alpha[i])/(2*sd_prior_alpha*sd_prior_alpha));
 
                 r=randgen_parallel[omp_get_thread_num()].randDblExc();
 
@@ -741,15 +741,16 @@ void jump_model_eta_codominant()
                     if (eta2_included[g][i]) {//if we add parameter
                         A+= log_prior_alpha(eta2[g][i])//-0.5*log(2*M_PI*sd_prior_alpha*sd_prior_alpha)-(alpha[i]*alpha[i])/(2*sd_prior_alpha*sd_prior_alpha)
                             -(-0.5*log(2*M_PI*var_eta2[g][i])-((eta2[g][i]-mean_eta2[g][i])*(eta2[g][i]-mean_eta2[g][i]))/(2*var_eta2[g][i]))-log(prior_odds);
+                        // with all groups but one selected, this move is only proposed with probability 0.5 (see r2 above)
                         if (pressure[p].member.size()>2 && (nb_present==pressure[p].member.size()-1))
-                            A+=log(pressure[p].member.size())-log(pressure[p].member.size()-1);
+                            A+=log(pressure[p].member.size())-log(pressure[p].member.size()-1)-log(2);
                     }
                 // inverse if we remove
                     else {
-                        A+= (-0.5*log(2*M_PI*var_eta2[g][i])-((eta2[g][i]-mean_eta2[g][i])*(eta2[g][i]-mean_eta2[g][i]))/(2*var_eta2[g][i]))
-                            -log_prior_alpha(eta2[g][i])+log(prior_odds);//-(-0.5*log(2*M_PI*sd_prior_alpha*sd_prior_alpha)-(alpha[i]*alpha[i])/(2*sd_prior_alpha*sd_prior_alpha));
+                        A+= (-0.5*log(2*M_PI*var_eta2[g][i])-((old_eta2-mean_eta2[g][i])*(old_eta2-mean_eta2[g][i]))/(2*var_eta2[g][i]))
+                            -log_prior_alpha(old_eta2)+log(prior_odds);//-(-0.5*log(2*M_PI*sd_prior_alpha*sd_prior_alpha)-(alpha[i]*alpha[i])/(2*sd_prior_alpha*sd_prior_alpha));
                         if (pressure[p].member.size()>2 && (nb_present==pressure[p].member.size()-2))
-                            A+=log(pressure[p].member.size()-1)-log(pressure[p].member.size());
+                            A+=log(pressure[p].member.size()-1)-log(pressure[p].member.size())+log(2);
                     }
 
                     r=randgen_parallel[omp_get_thread_num()].randDblExc();
