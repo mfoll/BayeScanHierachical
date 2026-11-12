@@ -27,7 +27,7 @@ The convergent model adds one coefficient and has its own prior odds, set with `
 
 Before this option existed, the convergent model of a pressure with G groups had a prior weight of `pr_odds^-(G-1)`. Nothing changes for pressures with two groups. For more groups the former behaviour is obtained with `-pr_odds_conv` set to `pr_odds^(G-1)`, for example `-pr_odds_conv 100` for three groups with the default prior odds.
 
-The chain only reaches the convergent model from a model with all groups but one selected. With the default prior these models become much less likely than the convergent model as the number of groups grows, so the chain enters and leaves the convergent model rarely and its posterior probability is estimated with more noise. With default run lengths on the example SNP data, the typical error on this probability was 0.008 with three groups and 0.02 with four, with errors of up to 0.1 for single loci. With four groups in a pressure, use longer runs (`-n`) and compare independent runs. From five groups on, the probability of convergent selection should not be trusted without much longer runs.
+The chain reaches the convergent model either directly from the model without selection or from a model with all groups but one selected. With default run lengths on the example SNP data and two to five groups in a pressure, the typical error on the posterior probability of convergent selection was 0.004 to 0.006, and at most 0.08 for a single locus with five groups.
 
 A statically linked binary can be downloaded in [Releases](https://github.com/mfoll/BayeScanHierachical/releases), it should work with most Linux distributions. A docker container is available [here](https://hub.docker.com/r/mfoll/bayescanhierachical/builds/).
 

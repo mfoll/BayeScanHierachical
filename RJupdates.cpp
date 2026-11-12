@@ -466,6 +466,16 @@ void jump_model_eta_codominant_ok_old()
 
 
 
+// log of the probability that the "normal" move of jump_model_eta_codominant is proposed for one given group,
+// in a pressure of S groups of which n have their own coefficient
+static double log_proposal_normal(int S,int n)
+{
+    if (S==1) return 0;
+    double move=(n==0 || n==S-1) ? 0.5 : 1; // a move to the convergent evolution model is proposed otherwise
+    double choice=(n==S-1) ? 1.0/(S-1) : 1.0/S; // the last group cannot be added
+    return log(move*choice);
+}
+
 void jump_model_eta_codominant()
 {
 
@@ -484,13 +494,13 @@ void jump_model_eta_codominant()
         {
             // loop over pressures
             for (int p=0;p<P;p++) {
-                // propose to move to  convergent evolution model in the pressure if
-                //      - under convergent evolution model already
-                // OR ( - more than one group in the pressure
-                // AND  - all groups in the pressures are under selection in the current iteration
-                // AND  - draw a random number > 0.5
-                //     )
-                // otherwise, do a normal move
+                // three kinds of moves:
+                //  - direct move between no selection and the convergent evolution model
+                //  - move between all groups but one under selection and the convergent evolution model
+                //  - "normal" move: add or remove the coefficient of one group
+                // from no selection and from all groups but one under selection, a move to the convergent
+                // evolution model is proposed with probability 0.5 (if more than one group in the pressure);
+                // from the convergent evolution model, each of its two moves is proposed with probability 0.5
                 // random number to propose convergent evolution move
                 double r2=randgen_parallel[omp_get_thread_num()].randDblExc();
                 // check if all groups in the pressure are under selection
@@ -503,7 +513,7 @@ void jump_model_eta_codominant()
                     all_present=all_present && eta2_included[pressure[p].member[g]][i];*/
 
                 //if (i==150 && all_present) cout << r2 << endl;
-                if (eta_included[p][i] || (pressure[p].member.size()>1 && nb_present==pressure[p].member.size()-1/*all_present*/ && r2>=0.5)) {
+                if (eta_included[p][i] || (pressure[p].member.size()>1 && (nb_present==pressure[p].member.size()-1 || nb_present==0) && r2>=0.5)) {
                     
                     /*f (i==150) {
                     cout << "propose CE model: ";
@@ -513,6 +523,8 @@ void jump_model_eta_codominant()
                     cout << endl;
                     getchar();
                     }*/
+                    // direct move: between no selection and the convergent evolution model
+                    bool direct=eta_included[p][i] ? r2<0.5 : nb_present==0;
                     // save the state
                     old_eta=eta[p][i];
                     
@@ -520,7 +532,7 @@ void jump_model_eta_codominant()
                     for (int g=0;g<pressure[p].member.size();g++)
                         old_eta2[g]=eta2[pressure[p].member[g]][i];
                     
-                    int g_null;
+                    int g_null=-1;
 
                     if (!eta_included[p][i]) { // propose to switch to convergent evolution model
                         // propose the new eta value as the average of eta2 values
@@ -533,6 +545,11 @@ void jump_model_eta_codominant()
                         for (int g=0;g<pressure[p].member.size();g++)
                             eta2[pressure[p].member[g]][i]=eta[p][i];
 
+                    }
+                    else if (direct) { // propose to switch to no selection
+                        eta[p][i]=0;
+                        for (int g=0;g<pressure[p].member.size();g++)
+                            eta2[pressure[p].member[g]][i]=0;
                     }
                     else { // propose to switch to all groups under different selection coeff
                         eta[p][i]=0;
@@ -612,10 +629,12 @@ void jump_model_eta_codominant()
 
 
                     
-                    // prior of the convergent model relative to a model with all groups but one selected
-                    double log_conv=(pressure[p].member.size()-1)*log(prior_odds)-log(prior_odds_conv);
+                    // prior of the convergent model and probability of the move, relative to the other model:
+                    // no selection for the direct move, otherwise a model with all groups but one selected
+                    double log_move=direct ? -log(prior_odds_conv)
+                        : (pressure[p].member.size()-1)*log(prior_odds)-log(prior_odds_conv)-log(pressure[p].member.size());
                     if (eta_included[p][i]) {//if we switch to convergent evolution model
-                        A+=log_prior_alpha(eta[p][i])+log(2)-log(pressure[p].member.size())+log_conv;
+                        A+=log_prior_alpha(eta[p][i])+log_move;
                         for (int g_index=0;g_index<pressure[p].member.size();g_index++) {
                             int g=pressure[p].member[g_index];
                             A+= ((int)(!eta2_included[g][i]))*(-0.5*log(2*M_PI*var_eta2[g][i])-((old_eta2[g_index]-mean_eta2[g][i])*(old_eta2[g_index]-mean_eta2[g][i]))/(2*var_eta2[g][i]))
@@ -624,11 +643,11 @@ void jump_model_eta_codominant()
                         A-= (-0.5*log(2*M_PI*var_eta[p][i])-((eta[p][i]-mean_eta[p][i])*(eta[p][i]-mean_eta[p][i]))/(2*var_eta[p][i]));                        
                     }
                     else {//if we switch to normal evolution model
-                        A-=log_prior_alpha(old_eta)+log(2)-log(pressure[p].member.size())+log_conv;
+                        A-=log_prior_alpha(old_eta)+log_move;
                         for (int g_index=0;g_index<pressure[p].member.size();g_index++) {
                             int g=pressure[p].member[g_index];
-                            A-= ((int)(g!=g_null))*(-0.5*log(2*M_PI*var_eta2[g][i])-((eta2[g][i]-mean_eta2[g][i])*(eta2[g][i]-mean_eta2[g][i]))/(2*var_eta2[g][i]))
-                                    -((int)(g!=g_null))*log_prior_alpha(eta2[g][i]);
+                            A-= ((int)(!direct && g!=g_null))*(-0.5*log(2*M_PI*var_eta2[g][i])-((eta2[g][i]-mean_eta2[g][i])*(eta2[g][i]-mean_eta2[g][i]))/(2*var_eta2[g][i]))
+                                    -((int)(!direct && g!=g_null))*log_prior_alpha(eta2[g][i]);
                         }
                         A+= (-0.5*log(2*M_PI*var_eta[p][i])-((old_eta-mean_eta[p][i])*(old_eta-mean_eta[p][i]))/(2*var_eta[p][i]));
                     }
@@ -651,7 +670,7 @@ void jump_model_eta_codominant()
                     {
                        // if (i==150) cout << " -> accepted ";
                         log_likelihood=log_likelihood+diff_log_likelihood;
-                        if (eta_included[p][i]) {
+                        if (eta_included[p][i] || direct) {
                             for (int g=0;g<pressure[p].member.size();g++)
                                 eta2_included[pressure[p].member[g]][i]=false;
                         }
@@ -743,16 +762,14 @@ void jump_model_eta_codominant()
                     if (eta2_included[g][i]) {//if we add parameter
                         A+= log_prior_alpha(eta2[g][i])//-0.5*log(2*M_PI*sd_prior_alpha*sd_prior_alpha)-(alpha[i]*alpha[i])/(2*sd_prior_alpha*sd_prior_alpha)
                             -(-0.5*log(2*M_PI*var_eta2[g][i])-((eta2[g][i]-mean_eta2[g][i])*(eta2[g][i]-mean_eta2[g][i]))/(2*var_eta2[g][i]))-log(prior_odds);
-                        // with all groups but one selected, this move is only proposed with probability 0.5 (see r2 above)
-                        if (pressure[p].member.size()>2 && (nb_present==pressure[p].member.size()-1))
-                            A+=log(pressure[p].member.size())-log(pressure[p].member.size()-1)-log(2);
+                        // probabilities of proposing this move and its reverse
+                        A+=log_proposal_normal(pressure[p].member.size(),nb_present)-log_proposal_normal(pressure[p].member.size(),nb_present-1);
                     }
                 // inverse if we remove
                     else {
                         A+= (-0.5*log(2*M_PI*var_eta2[g][i])-((old_eta2-mean_eta2[g][i])*(old_eta2-mean_eta2[g][i]))/(2*var_eta2[g][i]))
                             -log_prior_alpha(old_eta2)+log(prior_odds);//-(-0.5*log(2*M_PI*sd_prior_alpha*sd_prior_alpha)-(alpha[i]*alpha[i])/(2*sd_prior_alpha*sd_prior_alpha));
-                        if (pressure[p].member.size()>2 && (nb_present==pressure[p].member.size()-2))
-                            A+=log(pressure[p].member.size()-1)-log(pressure[p].member.size())+log(2);
+                        A+=log_proposal_normal(pressure[p].member.size(),nb_present)-log_proposal_normal(pressure[p].member.size(),nb_present+1);
                     }
 
                     r=randgen_parallel[omp_get_thread_num()].randDblExc();
