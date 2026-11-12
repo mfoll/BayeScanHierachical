@@ -60,6 +60,7 @@ GLOB bool *alpha_included; // indicates if alpha is not null
 //GLOB int nb_alpha_included; // number of non null alpha values
 
 GLOB double prior_odds; // prior odds for neutral model 
+GLOB double prior_odds_conv; // prior odds for neutral model against convergent selection in a pressure
 
 GLOB double **eta; // matrix of locus effect within groups for convergent evolution model
 GLOB bool **eta_included; // indicates if eta is not null

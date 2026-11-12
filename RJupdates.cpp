@@ -220,11 +220,11 @@ void jump_model_eta()
 
                 if (eta_included[p][i]) //if we add parameter
                     A+= log_prior_alpha(eta[p][i])//-0.5*log(2*M_PI*sd_prior_alpha*sd_prior_alpha)-(alpha[i]*alpha[i])/(2*sd_prior_alpha*sd_prior_alpha)
-                        -(-0.5*log(2*M_PI*var_eta[p][i])-((eta[p][i]-mean_eta[p][i])*(eta[p][i]-mean_eta[p][i]))/(2*var_eta[p][i]))-log(prior_odds);
+                        -(-0.5*log(2*M_PI*var_eta[p][i])-((eta[p][i]-mean_eta[p][i])*(eta[p][i]-mean_eta[p][i]))/(2*var_eta[p][i]))-log(pressure[p].member.size()>1 ? prior_odds_conv : prior_odds);
             // inverse if we remove
                 else
                     A+= (-0.5*log(2*M_PI*var_eta[p][i])-((old_eta-mean_eta[p][i])*(old_eta-mean_eta[p][i]))/(2*var_eta[p][i]))
-                        -log_prior_alpha(old_eta)+log(prior_odds);//-(-0.5*log(2*M_PI*sd_prior_alpha*sd_prior_alpha)-(alpha[i]*alpha[i])/(2*sd_prior_alpha*sd_prior_alpha));
+                        -log_prior_alpha(old_eta)+log(pressure[p].member.size()>1 ? prior_odds_conv : prior_odds);//-(-0.5*log(2*M_PI*sd_prior_alpha*sd_prior_alpha)-(alpha[i]*alpha[i])/(2*sd_prior_alpha*sd_prior_alpha));
 
                 r=randgen_parallel[omp_get_thread_num()].randDblExc();
 
@@ -612,8 +612,10 @@ void jump_model_eta_codominant()
 
 
                     
+                    // prior of the convergent model relative to a model with all groups but one selected
+                    double log_conv=(pressure[p].member.size()-1)*log(prior_odds)-log(prior_odds_conv);
                     if (eta_included[p][i]) {//if we switch to convergent evolution model
-                        A+=log_prior_alpha(eta[p][i])+log(2)-log(pressure[p].member.size());
+                        A+=log_prior_alpha(eta[p][i])+log(2)-log(pressure[p].member.size())+log_conv;
                         for (int g_index=0;g_index<pressure[p].member.size();g_index++) {
                             int g=pressure[p].member[g_index];
                             A+= ((int)(!eta2_included[g][i]))*(-0.5*log(2*M_PI*var_eta2[g][i])-((old_eta2[g_index]-mean_eta2[g][i])*(old_eta2[g_index]-mean_eta2[g][i]))/(2*var_eta2[g][i]))
@@ -622,7 +624,7 @@ void jump_model_eta_codominant()
                         A-= (-0.5*log(2*M_PI*var_eta[p][i])-((eta[p][i]-mean_eta[p][i])*(eta[p][i]-mean_eta[p][i]))/(2*var_eta[p][i]));                        
                     }
                     else {//if we switch to normal evolution model
-                        A-=log_prior_alpha(old_eta)+log(2)-log(pressure[p].member.size());
+                        A-=log_prior_alpha(old_eta)+log(2)-log(pressure[p].member.size())+log_conv;
                         for (int g_index=0;g_index<pressure[p].member.size();g_index++) {
                             int g=pressure[p].member[g_index];
                             A-= ((int)(g!=g_null))*(-0.5*log(2*M_PI*var_eta2[g][i])-((eta2[g][i]-mean_eta2[g][i])*(eta2[g][i]-mean_eta2[g][i]))/(2*var_eta2[g][i]))

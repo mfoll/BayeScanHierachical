@@ -82,6 +82,7 @@ int main(int argc, char **argv) {
     opt->addUsage(" | Parameters of the model | ");
     opt->addUsage(" --------------------------- ");
     opt->addUsage(" -pr_odds 10  Prior odds for the neutral model, default is 10 ");
+    opt->addUsage(" -pr_odds_conv 10  Prior odds for the neutral model against convergent selection, default is the value of -pr_odds ");
     opt->addUsage(" -lb_fis 0    Lower bound for uniform prior on Fis (dominant data), default is 0");
     opt->addUsage(" -hb_fis 1    Higher bound for uniform prior on Fis (dominant data), default is 1");
     opt->addUsage(" -beta_fis    Optional beta prior for Fis (dominant data, m_fis and sd_fis need to be set)");
@@ -100,6 +101,7 @@ int main(int argc, char **argv) {
     opt->setOption("thin");
     opt->setOption("burn");
     opt->setOption("pr_odds");
+    opt->setOption("pr_odds_conv");
     opt->setOption("o");
     opt->setOption("d");
     opt->setOption("threads");
@@ -161,6 +163,14 @@ int main(int argc, char **argv) {
 
     if (opt->getValue("pr_odds") != NULL)
         prior_odds = atof(opt->getValue("pr_odds"));
+
+    prior_odds_conv = prior_odds;
+    if (opt->getValue("pr_odds_conv") != NULL)
+        prior_odds_conv = atof(opt->getValue("pr_odds_conv"));
+    if (prior_odds <= 0 || prior_odds_conv <= 0) {
+        cout << "Prior odds must be positive" << endl;
+        return 1;
+    }
 
     file_name = opt->getArgv(0);
     struct_file_name = opt->getValue("s");
