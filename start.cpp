@@ -1352,7 +1352,7 @@ int main(int argc, char **argv) {
                     for (int g = 0; g < G; g++) {
                         cur_fsc[g][i] = 0; // selection2
                         for (int j_g = 0; j_g < group[g].member.size(); j_g++)
-                            cur_fsc[g][i] += 1 / (1 + exp(-(eta2[g][i] + theta[group[g].member[j_g]])));
+                            cur_fsc[g][i] += 1 / (1 + exp(-((codominant < 1 ? eta[group[g].pressure][i] : eta2[g][i]) + theta[group[g].member[j_g]])));
                         cur_fsc[g][i] /= group[g].member.size();
                         post_fsc[g][i] += cur_fsc[g][i];
                     }

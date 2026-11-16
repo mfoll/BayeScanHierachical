@@ -698,6 +698,14 @@ int read_input_intensity(string outname, string struct_file_name, string outchec
 
     outfile << "There are " << J << " populations." << endl << endl;
 
+    // read_structure writes the group of each population: they must exist first
+    try {
+        pop = new pop_data[J];
+    } catch (const std::exception & Exp) {
+        cout << "Not enough memory for pop_data " << endl;
+        return 1;
+    }
+
     // read structure file
     read_structure(struct_file_name, outfile);
 
@@ -826,12 +834,6 @@ int read_input_intensity(string outname, string struct_file_name, string outchec
         return 1;
     }
 
-    try {
-        pop = new pop_data[J];
-    } catch (const std::exception & Exp) {
-        cout << "Not enough memory for pop_data " << endl;
-        return 1;
-    }
     try {
         f = new double[J];
     } catch (const std::exception & Exp) {

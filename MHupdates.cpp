@@ -198,7 +198,8 @@ void update_freq()
                 //#pragma omp critical(likelihood)
                 //log_likelihood=old_log_likelihood+diff_log_likelihood;
 
-                double phi_sc=exp(-(eta2[pop[j].group][i]+theta[j]));
+                // dominant markers: the coefficient within groups is that of the pressure (eta); eta2 is not used
+                double phi_sc=exp(-(eta[group[pop[j].group].pressure][i]+theta[j]));
                 // ratio A
                 A= diff_log_likelihood
                    +(phi_sc*group[pop[j].group].locus[i].p-1)*(log(pop[j].locus[i].p)-log(old_freq))
@@ -274,7 +275,7 @@ void update_freq_group()
                 for (int j=0;j<group[g].member.size();j++)
                 {
                     int cur_pop=group[g].member[j];
-                    phi_sc=exp(-(eta2[g][i]+theta[cur_pop]));
+                    phi_sc=exp(-(eta[group[g].pressure][i]+theta[cur_pop]));
                     A+= gammaln(phi_sc*old_freq) + gammaln(phi_sc*(1-old_freq))
                         - gammaln(phi_sc*group[g].locus[i].p) - gammaln(phi_sc*(1-group[g].locus[i].p))
                         + phi_sc*(group[g].locus[i].p-old_freq)*(log(pop[cur_pop].locus[i].p) - log(1-pop[cur_pop].locus[i].p));
@@ -412,8 +413,8 @@ void update_theta()
             if (!discarded_loci[i])
             {
                 // calculate old and new value of theta
-                new_phi=exp(-(eta2[pop[j].group][i]+theta[j]));
-                old_phi=exp(-(eta2[pop[j].group][i]+old_theta));
+                new_phi=exp(-(eta[group[pop[j].group].pressure][i]+theta[j]));
+                old_phi=exp(-(eta[group[pop[j].group].pressure][i]+old_theta));
                 A+= gammaln(new_phi)-gammaln(old_phi)
                     - gammaln(new_phi*group[pop[j].group].locus[i].p) + gammaln(old_phi*group[pop[j].group].locus[i].p)
                     - gammaln(new_phi*(1-group[pop[j].group].locus[i].p)) + gammaln(old_phi*(1-group[pop[j].group].locus[i].p))
@@ -1512,7 +1513,7 @@ void update_freq_intensity()// selection2
                 */
 
                 // ratio A
-                double phi_sc=exp(-(eta[pop[j].group][i]+theta[j]));
+                double phi_sc=exp(-(eta[group[pop[j].group].pressure][i]+theta[j]));
                 A= diff_log_likelihood
                    +(phi_sc*group[pop[j].group].locus[i].p-1)*(log(pop[j].locus[i].p)-log(old_freq))
                    + (phi_sc*(1-group[pop[j].group].locus[i].p)-1)*(log(1-pop[j].locus[i].p)-log(1-old_freq))
