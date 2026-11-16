@@ -56,7 +56,7 @@ Before this option existed, the convergent model of a pressure with G groups had
 
 The chain reaches the convergent model either directly from the model without selection or from a model with all groups but one selected. With default run lengths on the example SNP data and two to five groups in a pressure, the typical error on the posterior probability of convergent selection was 0.004 to 0.006, and at most 0.08 for a single locus with five groups.
 
-Executables for Linux (statically linked, it should work with most distributions) and macOS (Apple Silicon) can be downloaded in [Releases](https://github.com/mfoll/BayeScanHierachical/releases). The Docker image on [Docker Hub](https://hub.docker.com/r/mfoll/bayescanhierachical/) has not been rebuilt: it contains version 1.0 and its errors.
+Executables for Linux (statically linked, it should work with most distributions), macOS (Apple Silicon) and Windows (64 bits) can be downloaded in [Releases](https://github.com/mfoll/BayeScanHierachical/releases). The Docker image on [Docker Hub](https://hub.docker.com/r/mfoll/bayescanhierachical/) has not been rebuilt: it contains version 1.0 and its errors.
 
 ## Reference: 
 Foll M, Gaggiotti OE, Daub JT, Vatsiou A, Excoffier L. Widespread signals of convergent adaptation to high altitude in Asia and america. Am J Hum Genet. 2014 Oct 2;95(4):394-407. doi: 10.1016/j.ajhg.2014.09.002. Epub 2014 Sep 25. PubMed PMID: [25262650](https://www.ncbi.nlm.nih.gov/pubmed/25262650); PubMed Central PMCID: [PMC4185124](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4185124/). 
