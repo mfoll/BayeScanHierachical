@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
 
     /* 3. SET THE USAGE/HELP   */
     opt->addUsage(" --------------------------- ");
-    opt->addUsage(" | BayeScanH 1.0 usage:    | ");
+    opt->addUsage(" | BayeScanH 1.1 usage:    | ");
     opt->addUsage(" --------------------------- ");
     opt->addUsage(" -help        Prints this help ");
     opt->addUsage(" --------------------------- ");
