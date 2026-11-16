@@ -2,18 +2,26 @@
 
 ## Important: errors corrected in version 1.1 (November 2026)
 
-**Version 1.0 contains two errors that make the posterior probabilities of selection too high. Please use version 1.1 or later, and run again the analyses made with version 1.0.**
+**Version 1.0 contains errors that make its posterior probabilities of selection wrong. Please use version 1.1 or later, and run again the analyses made with version 1.0.**
+
+Two errors concern all types of data and make the probabilities of selection too high:
 
 - In the reversible-jump steps, the moves that remove a selection coefficient, except the one that leaves the convergent model, computed their acceptance probability after setting the coefficient to zero, and were accepted too rarely. The posterior probabilities of selection were overestimated and the q-values underestimated, mostly for loci with intermediate evidence. This is the error corrected in [BayeScan 2.2](https://github.com/mfoll/BayeScan).
 - For a selection pressure that contains three groups or more, one proposal ratio was wrong by a factor of two. The models with all groups but one selected, and the convergent model, had twice their prior weight. Pressures with two groups are not concerned.
 
 As an example, take the SNP example file of BayeScan (`test_SNPs.txt`) with the default options. With its ten populations in five groups of two and one pressure per group, 24 loci have a q-value below 0.05 for selection in at least one group with version 1.0, and 12 with version 1.1. With two groups of five populations and one pressure shared by the two groups, 13 loci have a q-value below 0.05 for convergent selection with both versions. Running longer chains does not correct the errors.
 
+Three more errors concern dominant markers only, that is binary AFLP data, band intensities and SNP genotype matrices:
+
+- The allele frequencies of the populations and of the groups, and the FST of each population, were updated as if there were no selection within groups, while the coefficient of selection was updated as if they depended on it. Alone, this error makes selection within groups detected too rarely and its coefficient too small; it adds to the two errors above, which act in the other direction.
+- Band intensities and SNP genotype matrices made the program crash when it read them.
+- With binary data, the acceptance ratio of the update of the population frequencies was only exact for frequencies away from 0 and 1. Its effect is small.
+
 The errors are in the code and not in the model.
 
 Version 1.1 also changes the prior of the convergent model for pressures with three groups or more, and adds a move to the chain. Neither is a correction, and both are described in *Prior on models* below. With three groups or more in a pressure, results therefore differ from those of version 1.0 for this reason as well; the option `-pr_odds_conv` gives the former prior.
 
-Many thanks to Luis Mijangos and his colleagues of the [dartR](https://github.com/green-striped-gecko/dartR) team, who found the first error in BayeScan and contributed its correction there ([pull request #9 of BayeScan](https://github.com/mfoll/BayeScan/pull/9)). The same error, and the second one, were then found here.
+Many thanks to Luis Mijangos and his colleagues of the [dartR](https://github.com/green-striped-gecko/dartR) team, who found the first error in BayeScan and contributed its correction there ([pull request #9 of BayeScan](https://github.com/mfoll/BayeScan/pull/9)). The same error, and the others, were then found here.
 
 ## Usage
 Hierachical version of BayeScan to detect natural selection from population-based genetic data. Most of the code and options are taken from the [original BayeScan](https://github.com/mfoll/BayeScan). There is one additional input file used to describe the hierachical structure of the populations (`-s` option). One first need to indicate the groups of populations, for example:
@@ -37,7 +45,7 @@ indicates that there is one selection pressure containing two groups labeled as 
 ```
 indicating an independant selection pressure in each group of populations.
 
-The main input file has the format of BayeScan for codominant markers or for binary dominant markers. Band-intensity AFLP data and SNP genotype matrices (`-snp`) are not supported: the program crashes when it reads them, in version 1.0 as in 1.1.
+The main input file has one of the formats of BayeScan: allele counts of codominant markers, binary dominant markers, band intensities of AFLP markers, or a SNP genotype matrix (`-snp`). With the last three, a selection pressure has a single coefficient, shared by its groups. Its posterior probability and q-value are in the columns `p_fsc_conv` and `qval_fsc_conv` of the pressure, also when the pressure has a single group; the columns `p_fsc` and `qval_fsc` of the groups are not used. To test selection in each group separately with such data, give each group its own pressure.
 
 ## Prior on models
 Every coefficient that enters the model is penalised by the prior odds for the neutral model (`-pr_odds`, default 10). For a selection pressure that contains several groups, the models are: no selection, selection in any subset of the groups except all of them (each selected group has its own coefficient), and convergent selection, where all groups share a single coefficient. Relative to no selection, a model with k selected groups has a prior weight of `pr_odds^-k`.
