@@ -1,0 +1,110 @@
+name: Windows executable
+
+# Builds the Windows command-line executable from the source of a release tag,
+# runs it on the example files of BayeScan, and attaches it to that release.
+# It runs when this branch is pushed; nothing runs on master.
+
+on:
+  push:
+    branches: [build-windows-executable]
+
+permissions:
+  contents: write   # to attach the executable to the release
+
+env:
+  TAG: v1.1
+  EXE: bayescanH_1.1_win64.exe
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.TAG }}
+
+      - name: Example files of BayeScan
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: mfoll/BayeScan
+          ref: v2.2
+          path: bayescan
+
+      - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2.33.0
+        with:
+          msystem: UCRT64
+          install: mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-libgomp
+
+      - name: Build a statically linked executable
+        shell: msys2 {0}
+        run: |
+          set -eu
+          g++ --version | head -1
+          # On Windows the C library declares a function named fstat, the name of a global
+          # variable of the program. The system headers are read first, then the variable is
+          # renamed for this compilation only: the source of the tag is not changed.
+          { grep -h '^ *#include *<' *.cpp *.h | tr -d '\r' | sed 's| *//.*||' | sort -u
+            echo '#include <sys/stat.h>'
+            echo '#define fstat bayescan_fstat_only'; } > windows_prefix.h
+          cat windows_prefix.h
+          g++ -O3 -std=gnu++11 -fopenmp -static -include windows_prefix.h -o "$EXE" start.cpp beta.cpp dirichlet.cpp RJupdates.cpp MHupdates.cpp likelihood.cpp read_write.cpp anyoption.cpp
+          strip "$EXE"
+          ls -l "$EXE"
+          sha256sum "$EXE"
+          objdump -p "$EXE" | grep "DLL Name" | sort -u
+          if objdump -p "$EXE" | grep "DLL Name" | grep -q -i -E "lib(gomp|winpthread|stdc|gcc)"; then
+            echo "the executable still needs a compiler library"; exit 1
+          fi
+
+      - name: Run on every example file, short chains
+        shell: bash
+        run: |
+          set -eu
+          EX=bayescan/input_examples
+          mkdir -p struct
+          printf '[groups]=5\n1 2 1 2\n2 2 3 4\n3 2 5 6\n4 2 7 8\n5 2 9 10\n\n[pressures]=5\n1 1 1\n2 1 2\n3 1 3\n4 1 4\n5 1 5\n' > struct/S5.txt
+          printf '[groups]=2\n1 5 1 2 3 4 5\n2 5 6 7 8 9 10\n\n[pressures]=1\n1 2 1 2\n' > struct/S2.txt
+          printf '[groups]=3\n1 4 1 2 3 4\n2 3 5 6 7\n3 3 8 9 10\n\n[pressures]=1\n1 3 1 2 3\n' > struct/S3.txt
+          printf '[groups]=2\n1 10 1 2 3 4 5 6 7 8 9 10\n2 9 11 12 13 14 15 16 17 18 19\n\n[pressures]=1\n1 2 1 2\n' > struct/S2m.txt
+          SHORT="-threads 4 -n 1000 -thin 10 -nbp 5 -pilot 1000 -burn 2000"
+          run() {
+            name=$1; want=$2; shift 2
+            mkdir -p "smoke/$name"
+            "./$EXE" "$@" -od "smoke/$name" -o t $SHORT > "smoke/$name/log.txt" 2>&1 || { tail -20 "smoke/$name/log.txt"; echo "$name failed"; exit 1; }
+            n=$(( $(wc -l < "smoke/$name/t_fst.txt") - 1 ))
+            echo "$name: exit 0, $n loci"
+            [ "$n" -eq "$want" ] || { echo "expected $want loci"; exit 1; }
+          }
+          "./$EXE" 2>&1 | sed -n 1,4p || true
+          run snps_S5         1000 $EX/test_SNPs.txt -s struct/S5.txt
+          run snps_S2_discard  994 $EX/test_SNPs.txt -s struct/S2.txt -d $EX/discarded.txt
+          run aflp_S2          100 $EX/test_binary_AFLP.txt -s struct/S2.txt
+          run int_S3           100 $EX/test_band_intensity_AFLP.txt -s struct/S3.txt
+          run geno_S2          100 $EX/test_genotype_SNP.txt -snp -s struct/S2.txt
+          run msats_S2m        106 $EX/test_msats.txt -s struct/S2m.txt
+          # the option whose variable is renamed at compile time
+          mkdir -p smoke/fstat_only
+          "./$EXE" $EX/test_SNPs.txt -s struct/S5.txt -fstat -od smoke/fstat_only -o t $SHORT > smoke/fstat_only/log.txt 2>&1 || { tail -20 smoke/fstat_only/log.txt; echo "fstat_only failed"; exit 1; }
+          echo "fstat_only: exit 0"
+
+      - name: Default options on the SNP example, five groups of two populations
+        shell: bash
+        run: |
+          set -eu
+          mkdir -p default
+          start=$(date +%s)
+          "./$EXE" bayescan/input_examples/test_SNPs.txt -s struct/S5.txt -od default -o t -threads 4 > default/log.txt 2>&1
+          echo "seconds: $(( $(date +%s) - start ))"
+          # loci with a q-value below 0.05 in at least one of the tests within groups (the header has no column for the locus index)
+          called=$(awk 'NR==1{for(i=1;i<=NF;i++) if ($i ~ /^qval_fsc/) c[i+1]=1; next} {hit=0; for (k in c) if ($k<0.05) hit=1; n+=hit} END{print n+0}' default/t_fst.txt)
+          echo "loci called within groups at q<0.05: $called (1.1 on Linux: 12; 1.0: 24)"
+          if [ "$called" -lt 8 ] || [ "$called" -gt 16 ]; then echo "outside the accepted range 8 to 16"; exit 1; fi
+
+      - name: Attach the executable to the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sha256sum "$EXE"
+          gh release upload "$TAG" "$EXE" --repo "$GITHUB_REPOSITORY"
