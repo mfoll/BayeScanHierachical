@@ -1,7 +1,9 @@
 name: Windows executable
 
-# Builds the Windows command-line executable from the source of a release tag,
-# runs it on the example files of BayeScan, and attaches it to that release.
+# Builds the Windows command-line executable from the source of REF and runs it on the
+# example files. With ATTACH 'true', REF is a release tag: the full runs are made as well
+# and the executable is attached to that release. Tags made before the global variable
+# fstat was renamed need the earlier version of this file, which renamed it at compile time.
 # It runs when this branch is pushed; nothing runs on master.
 
 on:
@@ -12,8 +14,9 @@ permissions:
   contents: write   # to attach the executable to the release
 
 env:
-  TAG: v1.1
-  EXE: bayescanH_1.1_win64.exe
+  REF: master
+  ATTACH: 'false'
+  EXE: bayescanH_win64.exe
 
 jobs:
   windows:
@@ -22,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ env.TAG }}
+          ref: ${{ env.REF }}
 
       - name: Example files of BayeScan
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -41,14 +44,7 @@ jobs:
         run: |
           set -eu
           g++ --version | head -1
-          # On Windows the C library declares a function named fstat, the name of a global
-          # variable of the program. The system headers are read first, then the variable is
-          # renamed for this compilation only: the source of the tag is not changed.
-          { grep -h '^ *#include *<' *.cpp *.h | tr -d '\r' | sed 's| *//.*||' | sort -u
-            echo '#include <sys/stat.h>'
-            echo '#define fstat bayescan_fstat_only'; } > windows_prefix.h
-          cat windows_prefix.h
-          g++ -O3 -std=gnu++11 -fopenmp -static -include windows_prefix.h -o "$EXE" start.cpp beta.cpp dirichlet.cpp RJupdates.cpp MHupdates.cpp likelihood.cpp read_write.cpp anyoption.cpp
+          g++ -O3 -std=gnu++11 -fopenmp -static -o "$EXE" start.cpp beta.cpp dirichlet.cpp RJupdates.cpp MHupdates.cpp likelihood.cpp read_write.cpp anyoption.cpp
           strip "$EXE"
           ls -l "$EXE"
           sha256sum "$EXE"
@@ -83,12 +79,13 @@ jobs:
           run int_S3           100 $EX/test_band_intensity_AFLP.txt -s struct/S3.txt
           run geno_S2          100 $EX/test_genotype_SNP.txt -snp -s struct/S2.txt
           run msats_S2m        106 $EX/test_msats.txt -s struct/S2m.txt
-          # the option whose variable is renamed at compile time
+          # the option whose variable had the name of a function of the C library
           mkdir -p smoke/fstat_only
           "./$EXE" $EX/test_SNPs.txt -s struct/S5.txt -fstat -od smoke/fstat_only -o t $SHORT > smoke/fstat_only/log.txt 2>&1 || { tail -20 smoke/fstat_only/log.txt; echo "fstat_only failed"; exit 1; }
           echo "fstat_only: exit 0"
 
       - name: Default options on the SNP example, five groups of two populations
+        if: env.ATTACH == 'true'
         shell: bash
         run: |
           set -eu
@@ -102,9 +99,10 @@ jobs:
           if [ "$called" -lt 8 ] || [ "$called" -gt 16 ]; then echo "outside the accepted range 8 to 16"; exit 1; fi
 
       - name: Attach the executable to the release
+        if: env.ATTACH == 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           sha256sum "$EXE"
-          gh release upload "$TAG" "$EXE" --repo "$GITHUB_REPOSITORY"
+          gh release upload "$REF" "$EXE" --repo "$GITHUB_REPOSITORY"
