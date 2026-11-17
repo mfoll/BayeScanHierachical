@@ -180,8 +180,8 @@ int main(int argc, char **argv) {
     else SNP_genotypes = false;
 
     if (opt->getFlag("fstat"))
-        fstat = true;
-    else fstat = false;
+        fstat_only = true;
+    else fstat_only = false;
     
 	if (opt->getFlag( "all_trace" ) )
         all_trace=true;
@@ -757,7 +757,7 @@ int main(int argc, char **argv) {
                 update_theta();
             else
                 update_theta_codominant();
-            if (!fstat) // update selection related parameters
+            if (!fstat_only) // update selection related parameters
             {
                 /*for (int i=0;i<I;i++)
                 {
@@ -1102,7 +1102,7 @@ int main(int argc, char **argv) {
         mainout << "Fsc" << (j + 1) << " ";
     }
 
-    if (!fstat && all_trace) {
+    if (!fstat_only && all_trace) {
         for (int i = 0; i < I; i++) {
             if (!discarded_loci[i])
                 mainout << "alpha" << (i + 1) << " ";
@@ -1122,7 +1122,7 @@ int main(int argc, char **argv) {
     }
     mainout << endl;
 
-    if (!fstat) {
+    if (!fstat_only) {
         for (int i = 0; i < I; i++) {
             if (!discarded_loci[i])
                 modelout << "locus" << (i + 1) << " ";
@@ -1233,7 +1233,7 @@ int main(int argc, char **argv) {
         else
             update_theta_codominant();
 
-        if (!fstat) // update selection related parameters
+        if (!fstat_only) // update selection related parameters
         {
             /*for (int i=0;i<I;i++)
             {
@@ -1310,7 +1310,7 @@ int main(int argc, char **argv) {
         else
             update_freq_intensity();
 
-        if (!fstat) // update selection related parameters
+        if (!fstat_only) // update selection related parameters
         {
             /* for (int i=0;i<I;i++)
              {
@@ -1488,7 +1488,7 @@ int main(int argc, char **argv) {
                         if (!opt->getFlag( "fstat" ))
                             fst_file << p_rj << " " << bf << " " <<  setw(5) << setprecision(5) << setiosflags(ios::showpoint) << post_eta[g][i]/(double)cur_out << " " <<  post_fsc[g][i]/(double)cur_out << " ";// << endl;
                     }
-                    if (!fstat) fst_file << endl;
+                    if (!fstat_only) fst_file << endl;
                 }
             }
         }*/
@@ -1610,7 +1610,7 @@ int main(int argc, char **argv) {
                     if (!opt->getFlag("fstat"))
                         fst_file << p_rj_eta2[g][i] << " " << po_eta2[g][i] << " " << q_val_eta2[g][i] << " " << setw(5) << setprecision(5) << setiosflags(ios::showpoint) << post_eta2[g][i] / (double) cur_out << " " << post_fsc[g][i] / (double) cur_out << " "; // << endl;
                 }
-                if (!fstat) fst_file << endl;
+                if (!fstat_only) fst_file << endl;
             }
         }
     }

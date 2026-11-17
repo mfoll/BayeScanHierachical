@@ -1014,7 +1014,7 @@ void write_output(std::ofstream& outfile) {
     // write prop of non zero alpha
     //outfile << setprecision(8) << " " << ((double)nb_alpha_included)/((double)I);
     // write alpha
-    if (!fstat  && all_trace) {
+    if (!fstat_only  && all_trace) {
         for (int i = 0; i < I; i++) {
             if (!discarded_loci[i])
                 outfile << setprecision(8) << " " << alpha[i];
