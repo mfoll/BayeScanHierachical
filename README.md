@@ -15,7 +15,7 @@ Three more errors concern dominant markers only, that is binary AFLP data, band 
 
 - The allele frequencies of the populations and of the groups, and the FST of each population, were updated as if there were no selection within groups, while the coefficient of selection was updated as if they depended on it. Alone, this error makes selection within groups detected too rarely and its coefficient too small; it adds to the two errors above, which act in the other direction.
 - Band intensities and SNP genotype matrices made the program crash when it read them.
-- With binary data, the acceptance ratio of the update of the population frequencies was only exact for frequencies away from 0 and 1. Its effect is small.
+- With binary data, the acceptance ratio of the update of the population frequencies was only exact for frequencies away from 0 and 1. With the AFLP example file of BayeScan in five groups of two populations, this error alone made the FST within groups 6 to 8% too low, and changed the posterior probabilities of selection by 0.02 at most. The same error is corrected in BayeScan 2.3.
 
 The errors are in the code and not in the model.
 
